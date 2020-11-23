@@ -5,7 +5,54 @@ import queue
 import sys
 import copy
 # Wont need this in the end
-from constraintMaker import *
+# from constraintMaker import *
+
+def createConstraints():
+    # This creates the contraints so I dont have to.
+    mat = createMatrix()
+    ret = []
+    for a in range(9):
+        row = []
+        for b in range(9):
+            item = mat[a][b]
+            col = []
+
+            # Here is the rows contraints
+            for item2 in mat[a]:
+                if not item2 in col and item2 != item:
+                    col.append(item2)
+
+            # Here is the column constraint
+            for i in range(9):
+                item2 = mat[i][b]
+                if not item2 in col and item2 != item:
+                    col.append(item2)
+
+            # Here is the box. A little harder
+            y = a // 3
+            x = b // 3
+
+            for c in range(3):
+                for d in range(3):
+                    item2 = mat[(y * 3) + c][(x * 3) + d]
+                    if not item2 in col and item2 != item:
+                        col.append(item2)
+            row.append(col)
+        ret.append(row)
+    return ret
+
+def createMatrix():
+    # This creates the matrix. Will be printed out at the end to be turned in
+    letters = "A B C D E F G H I"
+    # letters = "A B C D"
+    lets = letters.split(" ")
+    ret = []
+    for let in lets:
+        lst = []
+        for i in range(1,10):
+            lst.append(let + str(i))
+        ret.append(lst)
+    return ret
 
 variable_matrix = createMatrix()
 
@@ -168,9 +215,74 @@ def totalColTest(csp):
 
 
 
-#def AC_3(csp):
+# Notes:
+# The formats of stuff
+# csp: {cell : [[list of possibles], [constraints]]}
+# xi and xj are the items. They are in their key form
+# domain is the list of possibles values
+# xi.neighbors is the constraints
+# The format will come close to the book but will deviate in format
+def Asearch(csp):
+    if doneQ(csp):
+        return csp
 
-#def revise:
+    var = MRV(csp)
+    if var == '':
+        return None
+
+    domains = csp[var][0]
+
+    for i in domains:
+
+        tempCSP = copy.deepcopy(csp)
+
+        tempCSP[var][0] = [i]
+
+        AC_3(csp)
+
+        if not collisionTest(tempCSP, var):
+            result = BTS(tempCSP)
+
+            if result != None:
+                return result
+
+    return None
+
+def AC_3(csp):
+    # This needs to contain the arcs of the csp
+    q = queue.Queue()
+    createArcs(csp, q)
+
+    while not q.empty():
+        # display(csp)
+        (xi, xj) = q.get()
+        if revise(csp,xi,xj):
+            if csp[xi][0] == 0:
+                return False
+            for xk in csp[xi][1]:
+                if xk != xj:
+                    q.put(xk, xi)
+    return True
+
+def revise(csp, xi, xj):
+    revised = False
+    good = False
+    lst = []
+    for num1 in csp[xi][0]:
+        for num2 in csp[xj][0]:
+            if num1 != num2:
+                good = True
+                break
+        if good:
+           lst.append(num1)
+        else:
+            revised = True
+    csp[xi][0] = lst
+
+def createArcs(csp, q):
+    for key in csp:
+        for con in csp[key][1]:
+            q.put((key, con))
 
 def MRV(csp):
 
@@ -228,9 +340,11 @@ def main():
             csp.update({variable_matrix[i][j]:[domain[i][j],constraints[i][j]]})
             #print(variable_matrix[i][j]+"  "+str(csp[variable_matrix[i][j]][0])+" "+str(csp[variable_matrix[i][j]][1]))
 
-    solution=BTS_search(csp)
-
+    solution = Asearch(csp)
     display(solution)
+
+    # solution=BTS_search(csp)
+    # display(solution)
     
 
 if __name__=="__main__":
